@@ -1,12 +1,14 @@
-  const int pinHall = A0;
- 
-void setup() {
+const int pinHall = A0;
+
+void setup(){ 
   pinMode(pinHall, INPUT);
   Serial.begin(9600);
 }
- 
-void loop() {
- 
+
+//MODIFICAR
+
+void loop()
+{ 
   //media de 10 medidas para filtrar ruido
   long measure = 0;
   for(int i = 0; i < 10; i++){
@@ -27,6 +29,7 @@ void loop() {
   Serial.print("Magnetic Flux Density = ");
   Serial.print(flujo);
   Serial.println(" T");
+  Serial.write(flujo); //Envía el dato procesado al master o principal
   
-  delay(250);
+  delay(75);
 }
