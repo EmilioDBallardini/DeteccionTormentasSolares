@@ -9,39 +9,39 @@ DateTime now;
 RTC_DS3231 rtc;
 
 String daysOfTheWeek[7] = { "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" };
-String monthsNames[12] = { "Enero", "Febrero", "Marzo", "Abril", "Mayo",  "Junio", "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre" };
+String monthsNames[12] = { "Enero", "Febrero", "Marzo", "Abril", "Mayo",  "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
 
 
 
-int segundo,minuto,hora,dia,mes;
+int segundo, minuto, hora, dia, mes;
 long anio; //variable año
 DateTime HoraFecha;
 
 void setup () {
   Serial.begin(9600);
-  pinMode(10, OUTPUT);
-  if (!rtc.begin()) { //Verificamos si se inicializa 
+  pinMode(4, OUTPUT);
+  if (!rtc.begin()) { //Verificamos si se inicializa
     Serial.println(F("No se encontró reloj alguno"));
-    while (1);
+
   }
   // Si se ha perdido la corriente, fijar fecha y hora
   if (rtc.lostPower()) {
     // Fijar a fecha y hora de compilacion
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    
+
     // Fijar a fecha y hora específica. En el ejemplo, 21 de Enero de 2016 a las 03:00:00
     // rtc.adjust(DateTime(2016, 1, 21, 3, 0, 0));
   }
   Serial.print(F("Iniciando SD ..."));
-  if (!SD.begin(10))
+  if (!SD.begin(4))
   {
     Serial.println(F("Error al iniciar"));
     return;
   }
   SD.mkdir("BBG/Datos");
   Serial.println(F("Iniciado correctamente"));
-  if(!SD.exists("BBG/Datos/archivo_datos.txt")){
-    archivo_datos = SD.open("BBG/Datos/archivo_datos.txt");//abrimos  el archivo   
+  if (!SD.exists("BBG/Datos/archivo_datos.txt")) {
+    archivo_datos = SD.open("BBG/Datos/archivo_datos.txt");//abrimos  el archivo
     archivo_datos.close();
   }
 }
@@ -81,29 +81,29 @@ void saveDate(DateTime date, float dato_normal)
 }
 
 //Reemplazar con el dato recibido del otro arduino
-float readSensor(){
+float readSensor() {
   return 1.0123;
 }
 
 void loop () {
-   
+
   // Obtener fecha actual y mostrar por Serial
-  
+
   //delay(3000);
-  
+
   archivo_datos = SD.open("BBG/Datos/archivo_datos.txt", FILE_WRITE);
-  
+
   if (archivo_datos) {
     float value = readSensor();
     now = rtc.now();
     printDate(now);
     saveDate(now, value);
     archivo_datos.close();
-   }
-   else {
-     Serial.println(F("Error al abrir el archivo"));
-   }
+  }
+  else {
+    Serial.println(F("Error al abrir el archivo"));
+  }
 
-   archivo_datos.close();
-  delay(450);
+  archivo_datos.close();
+  delay(1000);
 }
