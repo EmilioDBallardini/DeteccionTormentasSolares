@@ -4,14 +4,20 @@
 #include <RTClib.h>
 #include <SoftwareSerial.h>
 
+//Como la conexión UART del Arduino va a ser usada para comunicarse con el host, se utiliza una comunicación serial virtual
+//Para esto es necesario establecer una conexión física entre los Arduinos, yo elegí los Pins 2(Rx) y 3(Tx)
+//La numeración y la asignación con "pinMode(x, X)" tiene que coincidir en ambos
+//Solo hay que intercambiar la conexión física entre cables, es decir, el cable que sale del Pin 2(Rx) del arduino principal, tiene que ir al Pin 3(Tx) del secundario.
+//En éste modelo se usa un módulo SD externo, en caso de que se use una placa que incluya lectora de SD como la de ethernet, hay que cambiar el código.
+
 SoftwareSerial serial_P = SoftwareSerial(2, 3); //RX entrada, TX salida
 
-File logFile;
+File logFile; //Asignamos una variable de tipo archivo.
 
-RTC_DS3231 rtc;
+RTC_DS3231 rtc; //La variable del reloj, el mismo puede ir variando ej. "RTC_DS1703.."
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-char aLimpiar = ' ';
+char aLimpiar = ' '; //Se usa para limpiar el Buffer de entrada del maestro cuando no hay intercambio de datos requeridos
 float datos[3] = {0.0, 0.0, 0.0};
 
 void setup() {
@@ -20,20 +26,16 @@ void setup() {
   pinMode(3, OUTPUT);
   serial_P.begin(9600);
   Serial.println("Se inició la variable de serial por software.");
-  pinMode(4, OUTPUT);
+  pinMode(4, OUTPUT);  //Se establece el Pin 4 para la salida de datos hacia la SD. Ésto de nuevo es elección personal, pero se suele usar éste o el Pin 10
 
   while (!serial_P) {
-
+    //Mientras no se haya iniciado la conexión serial virtual, no se hace nada
   }
   Serial.println(serial_P.read());
   Serial.println("Se inicio la comunicación serial");
 
-
-
-  delay(3000); // wait for console opening
-
   if (! rtc.begin()) {
-    Serial.println("Couldn't find RTC");
+    Serial.println("No se encontró ningún RTC");
     while (1);
   }
 
@@ -43,14 +45,14 @@ void setup() {
   serial_P.flush();
 
   if (rtc.lostPower()) {
-    Serial.println("RTC lost power, lets set the time!");
-    // If the RTC have lost power it will sets the RTC to the date & time this sketch was compiled in the following line
+    Serial.println("El RTC perdió energía, se reestablecerá la fecha");
+    // Esto es para actualizar el RTC a la hora actual, cuando el HOST reestablece la conexión.
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
+    // También es posible fijar la fecha por alguna a elección con el código siguiente
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
-
+  
+  // Inicializamos el arreglo de que va a recibir los datos en 0.0
   for (int i = 0; i < 3; i++)
     datos[i] = 0.0;
 
@@ -61,7 +63,9 @@ void setup() {
     return;
   }
   Serial.println(F("Iniciado correctamente"));
-
+  
+  // Acá pueden cambiar el nombre del archivo a guardar y el tipo.
+  // En la SD va a aparecer como "DATOS", o el nombre que ustedes elijan pero en mayúsculas y sin la extensión
   logFile = SD.open("datos.txt", FILE_WRITE);//abrimos  el archivo
   if (logFile) {
     Serial.print("Se abrió exitosamente..");
@@ -71,7 +75,9 @@ void setup() {
   logFile.close(); //cerramos el archivo
 }
 
-
+// Módulo para guardar la fecha, hora y datos en el archivo.
+// La lógica de la variable "Baja" es para establecer cuando hay que bajar de línea.
+// Esto fue pensado para que se reciban 3 datos desde el secundario y se guarden en el archivo en 3 colúmnas con sus respectivas fechas y valores.
 void logValue(DateTime date, float value, boolean baja)
 {
   logFile.print(date.year(), DEC);
@@ -106,41 +112,23 @@ void logValue(DateTime date, float value, boolean baja)
 
 
 void loop() {
-  serial_P.listen();
+  serial_P.listen(); // La conexión principal se pone en modo escucha
+  // Si fue exitosa entonces comienza a operar
   if (serial_P.isListening()) {
-    logFile = SD.open("datos.txt", FILE_WRITE);
+    logFile = SD.open("datos.txt", FILE_WRITE); // Leemos el archivo en modo lectura y escritura
     if (logFile) {
-      Serial.println("Se abrió el archivo");
+      logFile.println("Se abrió el archivo");
       datos[0] = serial_P.read() / 10 ; //Guardamos en la variable dato el valor leido
       datos[1] = serial_P.read() / 10; //Guardamos en la variable dato el valor leido
       datos[2] = serial_P.read() / 10; //Guardamos en la variable dato el valor leido
       logValue(rtc.now(), datos[0], false);
       logValue(rtc.now(), datos[1], false);
       logValue(rtc.now(), datos[2], true);
-      Serial.print("Dato");
-      Serial.print(0);
-      Serial.print(": ");
-      Serial.print(datos[0], 4);
-      Serial.print(" - ");
-
-      Serial.print("Dato");
-      Serial.print(1);
-      Serial.print(": ");
-      Serial.print(datos[1], 4);
-      Serial.print(" - ");
-
-      Serial.print("Dato");
-      Serial.print(2);
-      Serial.print(": ");
-      Serial.print(datos[2], 4);
-      Serial.println(" - ");
-
-      Serial.println("Se cerró el archivo");
     }
     else {
       Serial.println(F("Error al abrir el archivo"));
     }
-    logFile.close();
+    logFile.close(); // Cerramos el archivo.
   }
-  delay(1000);
+  delay(300);
 }
