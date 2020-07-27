@@ -75,7 +75,7 @@ void loop()
   Serial.print(" mT   ");
   */
   //interpolacion a densidad de flujo magnético
-  rrayFlujos[1] = flujoMagnetico(magneticFlux, salidas[1]);
+  arrayFlujos[1] = flujoMagnetico(magneticFlux, salidas[1]);
   /*
   Serial.print("Magnetic Flux Density = ");
   Serial.print(arrayFlujos[1]);
