@@ -19,6 +19,7 @@ RTC_DS3231 rtc; //La variable del reloj, el mismo puede ir variando ej. "RTC_DS1
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 char aLimpiar = ' '; //Se usa para limpiar el Buffer de entrada del maestro cuando no hay intercambio de datos requeridos
 float datos[3] = {0.0, 0.0, 0.0};
+String cadena;
 
 void setup() {
   Serial.begin(9600);
@@ -126,9 +127,17 @@ void loop() {
       logValue(rtc.now(), datos[2], true);
     }
     else {
-      Serial.println(F("Error al abrir el archivo"));
+      break;
     }
     logFile.close(); // Cerramos el archivo.
+  }
+  if ( serial.isAvailable() > 0 ){
+    logFile = SD.open("datos.txt", FILE_WRITE);
+    if ( logFile ) {
+      while ! ( eof(logFile) ) 
+        Serial.print(logFile.read());
+      logFile.close();
+    }
   }
   delay(300);
 }
